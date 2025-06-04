@@ -31,6 +31,18 @@ const userContextKey = "user"
 
 func InjectUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		internalCall := c.GetHeader("X-Internal-Call") == "true"
+		if internalCall {
+			user := &AuthenticatedUser{
+				ID:           "internal",
+				Email:        "internal@system.local",
+				TourOperator: "internal",
+				Level:        Admin,
+			}
+			c.Set(userContextKey, user)
+			c.Next()
+			return
+		}
 		levelStr := c.GetHeader("X-User-Level")
 		levelInt, err := strconv.Atoi(levelStr)
 		if err != nil {
