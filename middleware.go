@@ -1,8 +1,10 @@
 package turispro_user
 
 import (
+	"net"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -65,4 +67,36 @@ func GetUser(c *gin.Context) *AuthenticatedUser {
 		}
 	}
 	return nil
+}
+
+func IsInternalCall(c *gin.Context) bool {
+	clientIP := c.ClientIP()
+	internalHeader := strings.ToLower(c.GetHeader("X-Internal-Call"))
+
+	if isPrivateIP(clientIP) && internalHeader == "true" {
+		return true
+	}
+
+	return false
+}
+
+func isPrivateIP(ipStr string) bool {
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
+	}
+
+	privateCIDRs := []string{
+		"10.0.0.0/8",
+		"172.16.0.0/12",
+		"192.168.0.0/16",
+	}
+
+	for _, cidr := range privateCIDRs {
+		if _, subnet, err := net.ParseCIDR(cidr); err == nil && subnet.Contains(ip) {
+			return true
+		}
+	}
+
+	return false
 }
